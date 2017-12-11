@@ -31,7 +31,8 @@ function init() {
     light.shadow.camera.near = -40;
     scene.add( light );
 
-    var geometry = new THREE.BoxGeometry( 2, 3, 0.3 );
+    var height = 3;
+    var geometry = new THREE.BoxGeometry( 2, height, 0.3 );
 
     // ground
     var loader = new THREE.TextureLoader();
@@ -41,7 +42,8 @@ function init() {
     groundTexture.anisotropy = 16;
     var groundMaterial = new THREE.MeshLambertMaterial( { map: groundTexture } );
     var mesh = new Physijs.BoxMesh( new THREE.PlaneBufferGeometry( 60, 60 ), groundMaterial );
-    mesh.position.y =  - 5;
+    var planeY = -5;
+    mesh.position.y =  planeY;
     mesh.rotation.x = - Math.PI / 2;
     mesh.receiveShadow = true;
     scene.add( mesh );
@@ -84,6 +86,8 @@ function init() {
     } );
     dragControls.addEventListener( 'drag', function ( event ) {
         event.object.__dirtyPosition = true;
+        if(event.object.position.y < planeY + height/2 )
+            event.object.position.y = planeY + height/2;
     } );
     dragControls.addEventListener( 'dragend', function ( event ) {
         controls.enabled = true;
