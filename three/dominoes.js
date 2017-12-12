@@ -1,5 +1,5 @@
 var container, stats;
-var camera, controls, scene, renderer, vec;
+var camera, controls, scene, renderer, vec, selected;
 var objects = [];
 
 Physijs.scripts.worker = 'three/physijs_worker.js';
@@ -12,6 +12,8 @@ function init() {
     document.body.appendChild( container );
     camera = new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 1, 200 );
     camera.position.set( 0, 3, 50 );
+    
+    vec = new THREE.Vector3;
 
     scene = new Physijs.Scene();
     scene.background = new THREE.Color( 0x4085E8 );
@@ -73,8 +75,9 @@ function init() {
     controls.minDistance = 20;
     controls.maxDistance = 100;
     var dragControls = new THREE.DragControls( objects, camera, renderer.domElement );
-    vec = new THREE.Vector3;
+    selected = null;
     dragControls.addEventListener( 'dragstart', function ( event ) {
+        selected = event.object;
         controls.enabled = false;
                                   
         // freeze object
@@ -86,10 +89,15 @@ function init() {
     } );
     dragControls.addEventListener( 'drag', function ( event ) {
         event.object.__dirtyPosition = true;
-        if(event.object.position.y < planeY + height/2 )
-            event.object.position.y = planeY + height/2;
+
+        // limit drag through floor
+        var offset = Math.abs(height/2*(Math.cos(event.object.rotation.x)+0.01));
+                                  
+        if(event.object.position.y < planeY + offset )
+            event.object.position.y = planeY + offset;
     } );
     dragControls.addEventListener( 'dragend', function ( event ) {
+        selected = null;
         controls.enabled = true;
                                   
         // unfreeze object
@@ -105,7 +113,33 @@ function init() {
     container.appendChild( info );
     stats = new Stats();
     container.appendChild( stats.dom );
-    //
+    
+    // rotate domino
+    window.onkeydown = function( event ) {
+        if( selected ) {
+            var key = String.fromCharCode(event.keyCode);
+            if( key == 'A' ) {
+                    vec.set( 0, 1.5, 0 );
+                    selected.setAngularVelocity( vec );
+            }
+            else if( key == 'D' ) {
+                vec.set( 0, -1.5, 0 );
+                selected.setAngularVelocity( vec );
+            }
+        }
+    };
+    
+    // stop rotation
+    window.onkeyup = function( event ) {
+        if( selected ) {
+            var key = String.fromCharCode(event.keyCode);
+            if( key == 'A' || key == 'D' ) {
+                vec.set( 0, 0, 0 );
+                selected.setAngularVelocity( vec );
+            }
+        }
+    };
+    
     window.addEventListener( 'resize', onWindowResize, false );
 }
 function onWindowResize() {
