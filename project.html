@@ -18,13 +18,19 @@
                         color: #fff;
                         text-align: center;
                     }
+                
+                    a {
+                        text-decoration: underline;
+                        cursor: pointer;
+                    }
                 </style>
                 </head>
     <body>
         <div id="instructions" class="info"> z generates a new domino. x deletes a selected domino. <br/> Click and drag to rotate camera or move dominoes. Left click and drag to pan.<br/>
-            Press a or d to rotate a selected domino. Spacebar toggles left-click Push Mode.
+            Press a or d to rotate a selected domino. Spacebar toggles left-click Push Mode.<br/>
+            1 for random, 2 for spiral, 3 for stairs.
         </div>
-        <div id="pushMode" class="info"><br/><br/><br/>Push Mode off</div>
+        <div id="pushMode" class="info"><br/><br/><br/><br/>Push Mode off</div>
         <script src="three/three.js"></script>
 
         <script src="three/physi.js"></script>

@@ -1,5 +1,5 @@
 var container, stats;
-var camera, controls, scene, renderer, vec, selected;
+var camera, controls, scene, renderer, vec, selected, geometry, planeY, height;
 var raycaster, mouse = false;
 var objects = [];
 var ground = [];
@@ -42,8 +42,8 @@ function init() {
     light.shadow.camera.near = -40;
     scene.add( light );
 
-    var height = 3;
-    var geometry = new THREE.BoxGeometry( 2, height, 0.3 );
+    height = 3;
+    geometry = new THREE.BoxGeometry( 2, height, 0.3 );
 
     // ground
     var loader = new THREE.TextureLoader();
@@ -53,20 +53,15 @@ function init() {
     groundTexture.anisotropy = 16;
     var groundMaterial = new THREE.MeshLambertMaterial( { map: groundTexture } );
     var mesh = new Physijs.BoxMesh( new THREE.PlaneBufferGeometry( 60, 60 ), groundMaterial );
-    var planeY = -5;
+    planeY = -5;
     mesh.position.y =  planeY;
     mesh.rotation.x = - Math.PI / 2;
     mesh.receiveShadow = true;
     scene.add( mesh );
     ground.push(mesh);
 
-    // randomDominoes( geometry, planeY, height );
+    randomDominoes();
     
-    // spiralDominoes( geometry, planeY, height );
-    
-    stairDominoes( geometry, planeY, height );
-
-
     renderer = new THREE.WebGLRenderer( { antialias: true } );
     renderer.setPixelRatio( window.devicePixelRatio );
     renderer.setSize( window.innerWidth, window.innerHeight );
@@ -146,9 +141,9 @@ function init() {
         if( key == ' ') {
             pushMode = !pushMode;
             if(pushMode)
-                pushDOM.innerHTML = "<br/><br/><br/>Push Mode on";
+                pushDOM.innerHTML = "<br/><br/><br/><br/>Push Mode on";
             else
-                pushDOM.innerHTML = "<br/><br/><br/>Push Mode off";
+                pushDOM.innerHTML = "<br/><br/><br/><br/>Push Mode off";
         } else if ( key == 'Z' ) {
           raycaster.setFromCamera( mouse, camera );
           var intersects = raycaster.intersectObjects( ground );
@@ -164,6 +159,12 @@ function init() {
               objects.push( object );
           }
         }
+        else if( key == '1' )
+            randomDominoes();
+        else if( key == '2' )
+            spiralDominoes();
+        else if( key == '3' )
+            stairDominoes();
     };
 
     // stop rotation
@@ -181,7 +182,15 @@ function init() {
     window.addEventListener( 'resize', onWindowResize, false );
 }
 
-function randomDominoes( geometry, planeY, height ) {
+function clear() {
+    for( var i = objects.length - 1; i >= 0; i-- ) {
+        scene.remove( objects[i] );
+        objects.pop();
+    }
+}
+
+function randomDominoes() {
+    clear();
     for ( var i = 0; i < 10; i ++ ) {
         var object = new Physijs.BoxMesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff } ) );
         object.position.x = Math.random() * 20 - 10;
@@ -194,7 +203,8 @@ function randomDominoes( geometry, planeY, height ) {
     }
 }
 
-function spiralDominoes( geometry, planeY, height ) {
+function spiralDominoes() {
+    clear();
     for ( var i = 0; i < 15; i += 0.15) {
         var object = new Physijs.BoxMesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff } ) );
         object.position.x = 20*Math.cos(i) *(20-i)/20;
@@ -208,8 +218,8 @@ function spiralDominoes( geometry, planeY, height ) {
     }
 }
 
-function stairDominoes( geometry, planeY, height ) {
-    
+function stairDominoes() {
+    clear();
     // before stairs
     for ( var i = 0; i < 6; i ++) {
         var object = new Physijs.BoxMesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff } ) );
@@ -258,53 +268,6 @@ function stairDominoes( geometry, planeY, height ) {
         objects.push( object );
     }
 }
-
-// function resetControls() {
-//   // controls
-//   dragControls.removeEventListener( 'drag', dragFunc);
-//   dragControls.removeEventListener( 'dragend', dragEndFunc);
-//   controls = new THREE.OrbitControls( camera, renderer.domElement );
-//   controls.maxPolarAngle = Math.PI * 0.5;
-//   controls.minDistance = 20;
-//   controls.maxDistance = 100;
-//   dragControls = new THREE.DragControls( objects, camera, renderer.domElement );
-//   selected = null;
-//   dragControls.addEventListener( 'dragstart', function ( event ) {
-//       selected = event.object;
-//       controls.enabled = false;
-//
-//       // freeze object
-//       vec.set( 0, 0, 0 );
-//       event.object.setLinearVelocity( vec );
-//       event.object.setLinearFactor(vec);
-//       event.object.setAngularVelocity( vec );
-//       event.object.setAngularFactor(vec);
-//   } );
-//   dragControls.addEventListener( 'drag', dragFunc);
-//   dragControls.addEventListener( 'dragend', dragEndFunc);
-// }
-
-// function dragFunc( event ) {
-//     event.object.__dirtyPosition = true;
-//     var height = 3;
-//     var planeY = -5;
-//     // limit drag through floor
-//     var offset = Math.abs(height/2*(Math.cos(event.object.rotation.x)+0.01));
-//
-//     if(event.object.position.y < planeY + offset )
-//         event.object.position.y = planeY + offset;
-// }
-// function dragEndFunc( event ) {
-//    selected = null;
-//    controls.enabled = true;
-//
-//    // unfreeze object
-//    vec.set( 1, 1, 1 );
-//    event.object.setAngularFactor(vec);
-//    event.object.setLinearFactor(vec);
-//    if(pushMode)
-//        event.object.setLinearVelocity( camera.getWorldDirection().multiplyScalar(3) );
-// }
 
 function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
