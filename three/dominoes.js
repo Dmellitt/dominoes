@@ -53,17 +53,11 @@ function init() {
     mesh.receiveShadow = true;
     scene.add( mesh );
 
-    // dominoes
-    for ( var i = 0; i < 20; i ++ ) {
-        var object = new Physijs.BoxMesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff } ) );
-        object.position.x = Math.random() * 20 - 10;
-        object.position.y = Math.random() * 12 - 2;
-        object.position.z = Math.random() * 16 - 8;
-        object.castShadow = true;
-        object.receiveShadow = true;
-        scene.add( object );
-        objects.push( object );
-    }
+    // randomDominoes( geometry, planeY, height );
+    
+    // spiralDominoes( geometry, planeY, height );
+    
+    stairDominoes( geometry, planeY, height );
 
     renderer = new THREE.WebGLRenderer( { antialias: true } );
     renderer.setPixelRatio( window.devicePixelRatio );
@@ -154,12 +148,91 @@ function init() {
     
     window.addEventListener( 'resize', onWindowResize, false );
 }
+
+function randomDominoes( geometry, planeY, height ) {
+    for ( var i = 0; i < 20; i ++ ) {
+        var object = new Physijs.BoxMesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff } ) );
+        object.position.x = Math.random() * 20 - 10;
+        object.position.y = Math.random() * 12 - 2;
+        object.position.z = Math.random() * 16 - 8;
+        object.castShadow = true;
+        object.receiveShadow = true;
+        scene.add( object );
+        objects.push( object );
+    }
+}
+
+function spiralDominoes( geometry, planeY, height ) {
+    for ( var i = 0; i < 15; i += 0.15) {
+        var object = new Physijs.BoxMesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff } ) );
+        object.position.x = 20*Math.cos(i) *(20-i)/20;
+        object.position.y = 1;
+        object.position.z = 20*Math.sin(i) *(20-i)/20;
+        object.rotation.y = -i;
+        object.castShadow = true;
+        object.receiveShadow = true;
+        scene.add( object );
+        objects.push( object );
+    }
+}
+
+function stairDominoes( geometry, planeY, height ) {
+    
+    // before stairs
+    for ( var i = 0; i < 6; i ++) {
+        var object = new Physijs.BoxMesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff } ) );
+        object.position.x = 0;
+        object.position.y = planeY+height/2;
+        object.position.z = 16-2*i;
+        object.castShadow = true;
+        object.receiveShadow = true;
+        scene.add( object );
+        objects.push( object );
+    }
+    
+    // stairs
+    for ( var i = 3; i <= 12; i += 3) {
+        for ( var j = 0; j < i; j ++) {
+            var object = new Physijs.BoxMesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff } ) );
+            object.position.x = 0;
+            object.position.y = planeY+j*0.3;
+            object.position.z = 6-i/1.5;
+            object.rotation.x = Math.PI/2;
+            object.rotation.z = Math.PI/2;
+            object.castShadow = true;
+            object.receiveShadow = true;
+            scene.add( object );
+            objects.push( object );
+        }
+        // standing domino
+        var object = new Physijs.BoxMesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff } ) );
+        object.position.x = 0;
+        object.position.y = planeY+i*0.3+height/2;
+        object.position.z = 6-i/1.5;
+        object.castShadow = true;
+        object.receiveShadow = true;
+        scene.add( object );
+        objects.push( object );
+    }
+    // after stairs
+    for ( var i = 0; i < 6; i ++) {
+        var object = new Physijs.BoxMesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff } ) );
+        object.position.x = 0;
+        object.position.y = planeY+height/2;
+        object.position.z = -2*i-7;
+        object.castShadow = true;
+        object.receiveShadow = true;
+        scene.add( object );
+        objects.push( object );
+    }
+}
+
 function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize( window.innerWidth, window.innerHeight );
 }
-//
+
 function animate() {
     requestAnimationFrame( animate );
     scene.simulate(); // run physics
