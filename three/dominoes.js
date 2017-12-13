@@ -1,6 +1,10 @@
 var container, stats;
 var camera, controls, scene, renderer, vec, selected;
+var raycaster, mouse = false;
 var objects = [];
+var ground = [];
+var dragControls = false;
+var objectDeleted = false;
 
 Physijs.scripts.worker = 'three/physijs_worker.js';
 Physijs.scripts.ammo = 'ammo.js';
@@ -11,10 +15,12 @@ function init() {
     container = document.createElement( 'div' );
     document.body.appendChild( container );
     var pushDOM = document.getElementById( 'pushMode' );
-    
+
     vec = new THREE.Vector3;
     pushMode = false;
-    
+    raycaster = new THREE.Raycaster();
+    mouse = new THREE.Vector2();
+
     camera = new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 1, 200 );
     camera.position.set( 0, 3, 50 );
 
@@ -52,9 +58,10 @@ function init() {
     mesh.rotation.x = - Math.PI / 2;
     mesh.receiveShadow = true;
     scene.add( mesh );
+    ground.push(mesh);
 
     // dominoes
-    for ( var i = 0; i < 20; i ++ ) {
+    for ( var i = 0; i < 10; i ++ ) {
         var object = new Physijs.BoxMesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff } ) );
         object.position.x = Math.random() * 20 - 10;
         object.position.y = Math.random() * 12 - 2;
@@ -77,12 +84,12 @@ function init() {
     controls.maxPolarAngle = Math.PI * 0.5;
     controls.minDistance = 20;
     controls.maxDistance = 100;
-    var dragControls = new THREE.DragControls( objects, camera, renderer.domElement );
+    dragControls = new THREE.DragControls( objects, camera, renderer.domElement );
     selected = null;
     dragControls.addEventListener( 'dragstart', function ( event ) {
         selected = event.object;
         controls.enabled = false;
-                                  
+
         // freeze object
         vec.set( 0, 0, 0 );
         event.object.setLinearVelocity( vec );
@@ -95,21 +102,26 @@ function init() {
 
         // limit drag through floor
         var offset = Math.abs(height/2*(Math.cos(event.object.rotation.x)+0.01));
-                                  
+
         if(event.object.position.y < planeY + offset )
             event.object.position.y = planeY + offset;
     } );
     dragControls.addEventListener( 'dragend', function ( event ) {
         selected = null;
         controls.enabled = true;
-                                  
+
         // unfreeze object
         vec.set( 1, 1, 1 );
-        event.object.setAngularFactor(vec);
-        event.object.setLinearFactor(vec);
+        if( !objectDeleted ) {
+          event.object.setAngularFactor(vec);
+          event.object.setLinearFactor(vec);
+        } else {
+          objectDeleted = false;
+        }
         if(pushMode)
             event.object.setLinearVelocity( camera.getWorldDirection().multiplyScalar(3) );
     } );
+
     var info = document.createElement( 'div' );
     info.style.position = 'absolute';
     info.style.top = '10px';
@@ -118,7 +130,7 @@ function init() {
     container.appendChild( info );
     stats = new Stats();
     container.appendChild( stats.dom );
-    
+
     // rotate domino
     window.onkeydown = function( event ) {
         var key = String.fromCharCode(event.keyCode);
@@ -130,17 +142,35 @@ function init() {
             else if( key == 'D' ) {
                 vec.set( 0, -1.5, 0 );
                 selected.setAngularVelocity( vec );
+            } else if( key == 'X' ) {
+              //delete domino selected
+              objectDeleted = true;
+              scene.remove(selected);
             }
         }
         if( key == ' ') {
             pushMode = !pushMode;
             if(pushMode)
-                pushDOM.innerHTML = "<br/><br/>Push Mode on";
+                pushDOM.innerHTML = "<br/><br/><br/>Push Mode on";
             else
-                pushDOM.innerHTML = "<br/><br/>Push Mode off";
+                pushDOM.innerHTML = "<br/><br/><br/>Push Mode off";
+        } else if ( key == 'Z' ) {
+          raycaster.setFromCamera( mouse, camera );
+          var intersects = raycaster.intersectObjects( ground );
+          if ( intersects.length > 0 ) {
+              var intersect = intersects[ 0 ];
+              var geometry = new THREE.BoxGeometry( 2, 3, 0.3 );
+              var object = new Physijs.BoxMesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff } ) );
+              object.position.copy( intersect.point )
+              object.position.y = object.position.y + 2;
+              object.castShadow = true;
+              object.receiveShadow = true;
+              scene.add( object );
+              objects.push( object );
+          }
         }
     };
-    
+
     // stop rotation
     window.onkeyup = function( event ) {
         if( selected ) {
@@ -151,14 +181,70 @@ function init() {
             }
         }
     };
-    
+    //track mouse
+    document.addEventListener('mousemove', onDocumentMouseMove, false);
     window.addEventListener( 'resize', onWindowResize, false );
 }
+
+// function resetControls() {
+//   // controls
+//   dragControls.removeEventListener( 'drag', dragFunc);
+//   dragControls.removeEventListener( 'dragend', dragEndFunc);
+//   controls = new THREE.OrbitControls( camera, renderer.domElement );
+//   controls.maxPolarAngle = Math.PI * 0.5;
+//   controls.minDistance = 20;
+//   controls.maxDistance = 100;
+//   dragControls = new THREE.DragControls( objects, camera, renderer.domElement );
+//   selected = null;
+//   dragControls.addEventListener( 'dragstart', function ( event ) {
+//       selected = event.object;
+//       controls.enabled = false;
+//
+//       // freeze object
+//       vec.set( 0, 0, 0 );
+//       event.object.setLinearVelocity( vec );
+//       event.object.setLinearFactor(vec);
+//       event.object.setAngularVelocity( vec );
+//       event.object.setAngularFactor(vec);
+//   } );
+//   dragControls.addEventListener( 'drag', dragFunc);
+//   dragControls.addEventListener( 'dragend', dragEndFunc);
+// }
+
+// function dragFunc( event ) {
+//     event.object.__dirtyPosition = true;
+//     var height = 3;
+//     var planeY = -5;
+//     // limit drag through floor
+//     var offset = Math.abs(height/2*(Math.cos(event.object.rotation.x)+0.01));
+//
+//     if(event.object.position.y < planeY + offset )
+//         event.object.position.y = planeY + offset;
+// }
+// function dragEndFunc( event ) {
+//    selected = null;
+//    controls.enabled = true;
+//
+//    // unfreeze object
+//    vec.set( 1, 1, 1 );
+//    event.object.setAngularFactor(vec);
+//    event.object.setLinearFactor(vec);
+//    if(pushMode)
+//        event.object.setLinearVelocity( camera.getWorldDirection().multiplyScalar(3) );
+// }
+
 function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize( window.innerWidth, window.innerHeight );
 }
+
+function onDocumentMouseMove(event) {
+    event.preventDefault();
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+}
+
 //
 function animate() {
     requestAnimationFrame( animate );
