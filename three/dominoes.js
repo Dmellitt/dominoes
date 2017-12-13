@@ -10,10 +10,13 @@ animate();
 function init() {
     container = document.createElement( 'div' );
     document.body.appendChild( container );
-    camera = new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 1, 200 );
-    camera.position.set( 0, 3, 50 );
+    var pushDOM = document.getElementById( 'pushMode' );
     
     vec = new THREE.Vector3;
+    pushMode = false;
+    
+    camera = new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 1, 200 );
+    camera.position.set( 0, 3, 50 );
 
     scene = new Physijs.Scene();
     scene.background = new THREE.Color( 0x4085E8 );
@@ -22,8 +25,8 @@ function init() {
     light.position.set( 1, 4, 2 );
     light.position.multiplyScalar( 1.3 );
     light.castShadow = true;
-    light.shadow.mapSize.width = 1024;
-    light.shadow.mapSize.height = 1024;
+    light.shadow.mapSize.width = 2048;
+    light.shadow.mapSize.height = 2048;
     var d = 40;
     light.shadow.camera.left = - d;
     light.shadow.camera.right = d;
@@ -104,6 +107,8 @@ function init() {
         vec.set( 1, 1, 1 );
         event.object.setAngularFactor(vec);
         event.object.setLinearFactor(vec);
+        if(pushMode)
+            event.object.setLinearVelocity( camera.getWorldDirection().multiplyScalar(3) );
     } );
     var info = document.createElement( 'div' );
     info.style.position = 'absolute';
@@ -116,8 +121,8 @@ function init() {
     
     // rotate domino
     window.onkeydown = function( event ) {
+        var key = String.fromCharCode(event.keyCode);
         if( selected ) {
-            var key = String.fromCharCode(event.keyCode);
             if( key == 'A' ) {
                     vec.set( 0, 1.5, 0 );
                     selected.setAngularVelocity( vec );
@@ -126,6 +131,13 @@ function init() {
                 vec.set( 0, -1.5, 0 );
                 selected.setAngularVelocity( vec );
             }
+        }
+        if( key == ' ') {
+            pushMode = !pushMode;
+            if(pushMode)
+                pushDOM.innerHTML = "<br/><br/>Push Mode on";
+            else
+                pushDOM.innerHTML = "<br/><br/>Push Mode off";
         }
     };
     
